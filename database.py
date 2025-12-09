@@ -1,12 +1,24 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey, Date, Time
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime, date, time
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, Text, Time, Boolean, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.pool import StaticPool
 
-engine = create_engine(DATABASE_URL)
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+# Default to an in-memory SQLite database so the app runs without any external setup
+if not DATABASE_URL:
+    DATABASE_URL = "sqlite+pysqlite:///:memory:"
+
+if DATABASE_URL.startswith("sqlite"):
+    create_kwargs = {"connect_args": {"check_same_thread": False}}
+    if ":memory:" in DATABASE_URL:
+        create_kwargs["poolclass"] = StaticPool
+    engine = create_engine(DATABASE_URL, **create_kwargs)
+else:
+    engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
